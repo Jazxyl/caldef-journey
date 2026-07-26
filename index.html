@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>CalDef Journey</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FAF6F0;
+    --card:#FFFFFF;
+    --ink:#2B2420;
+    --ink-soft:#6B6055;
+    --line:#E8E0D4;
+    --moss:#5B7553;
+    --moss-soft:#E4EBE0;
+    --gold:#C98A3E;
+    --gold-soft:#F6E8D3;
+    --berry:#8B3A4A;
+    --berry-soft:#F3E0E2;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(43,36,32,0.05), 0 8px 24px rgba(43,36,32,0.06);
+    font-family:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+  @media (max-width:480px){ .wrap{padding:20px 14px 60px;} }
+
+  .hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
+  .eyebrow{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 6px;}
+  h1{font-family:'Fraunces',serif;font-weight:600;font-size:32px;margin:0;letter-spacing:-.01em;}
+  @media (max-width:480px){ h1{font-size:24px;} }
+  .datebadge-row{display:flex;align-items:center;gap:10px;}
+  .datebadge{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-soft);background:var(--card);border:1px solid var(--line);padding:6px 12px;border-radius:999px;}
+
+  .profiles{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
+  @media (max-width:640px){.profiles{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+  @media (max-width:480px){ .card{padding:16px;} }
+
+  .profile-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+  .profile-name{font-family:'Fraunces',serif;font-weight:600;font-size:19px;}
+  .target-edit{border:none;background:transparent;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);text-decoration:underline;cursor:pointer;padding:6px 0;}
+
+  .cup-row{display:flex;align-items:center;gap:16px;}
+  .cup-wrap{flex:none;}
+  .cup-nums{flex:1;}
+  .cup-cal{font-family:'Fraunces',serif;font-size:30px;font-weight:700;line-height:1;}
+  .cup-cal span{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:400;color:var(--ink-soft);}
+  .cup-remain{font-size:13px;color:var(--ink-soft);margin-top:4px;}
+  .cup-remain.over{color:var(--berry);font-weight:600;}
+
+  .macro-bars{margin-top:16px;display:flex;flex-direction:column;gap:8px;}
+  .macro-row{display:flex;align-items:center;gap:10px;font-size:12px;}
+  .macro-label{width:56px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;}
+  .macro-track{flex:1;height:6px;background:var(--paper);border-radius:99px;overflow:hidden;}
+  .macro-fill{height:100%;border-radius:99px;}
+  .macro-val{width:56px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--ink-soft);}
+
+  .section-title{font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0 0 12px;}
+
+  .log-card{margin-bottom:18px;}
+  .log-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field label{font-size:11px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;}
+  .field select,.field input{font-family:'Inter',sans-serif;font-size:16px;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);}
+  .field input{width:140px;}
+  .field.grow{flex:1;min-width:160px;}
+  .field.grow input{width:100%;}
+  button{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;padding:10px 18px;border-radius:8px;border:none;cursor:pointer;transition:transform .1s ease;}
+  button:active{transform:scale(.97);}
+  .btn-moss{background:var(--moss);color:#fff;}
+  .btn-moss:disabled{opacity:.5;cursor:default;}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--line);}
+  .wrapup-btn{margin-top:14px;font-size:11px;padding:5px 10px;width:auto;display:block;margin-left:auto;}
+
+  @media (max-width:480px){
+    .log-form{flex-direction:column;align-items:stretch;}
+    .field{width:100%;}
+    .field input{width:100%;}
+    #analyzeBtn{width:100%;padding:13px;}
+    .who-toggle{width:100%;}
+    .who-btn{flex:1;padding:11px 8px;}
+  }
+
+  .result-panel{margin-top:16px;padding:14px 16px;background:var(--moss-soft);border-radius:10px;display:none;}
+  .result-panel.show{display:block;}
+  .result-food{font-weight:600;margin-bottom:8px;}
+  .result-macros{display:flex;gap:18px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:13px;margin-bottom:12px;}
+  .result-macros b{display:block;font-family:'Fraunces',serif;font-size:17px;font-weight:700;}
+
+  .loglist{display:flex;flex-direction:column;gap:0;}
+  .logrow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .logrow:last-child{border-bottom:none;}
+  .logrow .who{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--ink-soft);width:52px;flex:none;}
+  .logrow .food{flex:1;}
+  .logrow .cal{font-family:'JetBrains Mono',monospace;color:var(--ink-soft);}
+  .empty-note{color:var(--ink-soft);font-size:13px;font-style:italic;}
+
+  .who-toggle{display:flex;gap:6px;}
+  .who-btn{font-family:'Inter',sans-serif;font-size:13px;font-weight:600;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer;}
+  .who-btn.active{background:var(--moss);color:#fff;border-color:var(--moss);}
+
+  .history-list{display:flex;flex-direction:column;gap:0;}
+  .history-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);}
+  .history-row:last-child{border-bottom:none;}
+  .history-date{width:96px;flex:none;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-soft);}
+  .history-totals{flex:1;display:flex;gap:18px;font-size:13px;flex-wrap:wrap;}
+  .history-totals b{font-family:'Fraunces',serif;font-size:15px;}
+  @media (max-width:480px){
+    .history-row{flex-direction:column;align-items:flex-start;gap:6px;}
+    .history-date{width:auto;}
+  }
+  .status-msg{font-size:12px;margin-top:6px;}
+  .status-msg.ok{color:var(--moss);}
+  .status-msg.err{color:var(--berry);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div>
+      <h1>CalDef Journey</h1>
+    </div>
+    <div class="datebadge" id="dateBadge"></div>
+  </div>
+
+  <div class="profiles" id="profiles"></div>
+
+  <div class="card log-card">
+    <p class="section-title">Log a food</p>
+    <div class="log-form">
+      <div class="field">
+        <label>Who</label>
+        <div class="who-toggle" id="whoToggle">
+          <button type="button" class="who-btn active" data-who="Labs 👦">Labs 👦</button>
+          <button type="button" class="who-btn" data-who="Labs 👧">Labs 👧</button>
+        </div>
+      </div>
+      <div class="field grow">
+        <label>Food</label>
+        <input type="text" id="foodInput" placeholder="e.g. rice">
+      </div>
+      <div class="field">
+        <label>Grams</label>
+        <input type="number" id="gramsInput" placeholder="100" style="width:90px;">
+      </div>
+      <button class="btn-moss" id="analyzeBtn">Get macros</button>
+    </div>
+
+    <div class="result-panel" id="resultPanel">
+      <div class="result-food" id="resultFood"></div>
+      <div class="result-macros" id="resultMacros"></div>
+      <button class="btn-moss" id="addBtn">Add to log</button>
+      <button class="btn-ghost" id="discardBtn">Discard</button>
+    </div>
+    <div class="status-msg" id="analyzeStatus"></div>
+  </div>
+
+  <div class="card">
+    <p class="section-title">Today's log</p>
+    <div class="loglist" id="logList"><p class="empty-note">Nothing logged yet today.</p></div>
+  </div>
+
+  <div class="card">
+    <p class="section-title">History</p>
+    <div class="history-list" id="historyList"><p class="empty-note">Past days will show up here once logged.</p></div>
+  </div>
+
+</div>
+
+<script>
+function realDateStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+const PROFILES = [
+  { key: 'Labs 👦', target: 2050, dayId: realDateStr(), storeKey: 'boy' },
+  { key: 'Labs 👧', target: 1350, dayId: realDateStr(), storeKey: 'girl' }
+];
+let config = { webhook: 'https://script.google.com/macros/s/AKfycbxrnlWJ3l2z3unQ0W4gJ_Lx4rplc0L9xv1wG4l2f403nv4lqFzV3lfcFCOXXnwSvg4eIw/exec' };
+let allEntries = [];
+let selectedWho = 'Labs 👦';
+
+document.getElementById('dateBadge').textContent = new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+
+function macroBar(label, val, color){
+  const pct = Math.min(100, val ? Math.round(val) : 0);
+  return `<div class="macro-row">
+    <div class="macro-label">${label}</div>
+    <div class="macro-track"><div class="macro-fill" style="width:${pct}%;background:${color};"></div></div>
+    <div class="macro-val">${val ? Math.round(val)+'g' : '—'}</div>
+  </div>`;
+}
+
+function renderProfiles(){
+  const wrap = document.getElementById('profiles');
+  wrap.innerHTML = PROFILES.map(p => {
+    const entries = allEntries.filter(e => e.person === p.key && e.date === p.dayId);
+    const cal = entries.reduce((s,e)=>s+Number(e.calories||0),0);
+    const protein = entries.reduce((s,e)=>s+Number(e.protein||0),0);
+    const carbs = entries.reduce((s,e)=>s+Number(e.carbs||0),0);
+    const fat = entries.reduce((s,e)=>s+Number(e.fat||0),0);
+    const remain = p.target - cal;
+    const fillPct = Math.min(100, Math.round((cal/p.target)*100));
+    const cupColor = cal > p.target ? 'var(--berry)' : 'var(--moss)';
+    return `<div class="card">
+      <div class="profile-head">
+        <div class="profile-name">${p.key}</div>
+        <button class="target-edit" data-key="${p.key}">target ${p.target} cal</button>
+      </div>
+      <div class="cup-row">
+        <div class="cup-wrap">${cupSvg(fillPct, cupColor)}</div>
+        <div class="cup-nums">
+          <div class="cup-cal">${Math.round(cal)} <span>/ ${p.target} cal</span></div>
+          <div class="cup-remain ${remain<0?'over':''}">${remain<0 ? Math.abs(Math.round(remain))+' cal over' : Math.round(remain)+' cal left'}</div>
+        </div>
+      </div>
+      <div class="macro-bars">
+        ${macroBar('Protein', protein, 'var(--moss)')}
+        ${macroBar('Carbs', carbs, 'var(--gold)')}
+        ${macroBar('Fat', fat, 'var(--berry)')}
+      </div>
+      <button class="btn-ghost wrapup-btn" data-key="${p.key}">Wrap up ${p.key}'s day</button>
+    </div>`;
+  }).join('');
+
+  wrap.querySelectorAll('.target-edit').forEach(btn=>{
+    btn.onclick = () => {
+      const p = PROFILES.find(x=>x.key===btn.dataset.key);
+      const val = prompt('Set daily target calories for '+p.key, p.target);
+      if (val && !isNaN(val)) { p.target = Number(val); renderProfiles(); renderHistory(); saveTargets(); }
+    };
+  });
+
+  wrap.querySelectorAll('.wrapup-btn').forEach(btn=>{
+    btn.onclick = async () => {
+      const p = PROFILES.find(x=>x.key===btn.dataset.key);
+      if (!confirm(`Wrap up ${p.key}'s day? It will move into History and a new day will start for ${p.key}.`)) return;
+      p.dayId = realDateStr();
+      try { await window.storage.set('caldef-day-' + p.storeKey, p.dayId, true); } catch(e){}
+      renderProfiles(); renderLog(); renderHistory();
+      if (config.webhook) await loadTodayFromSheet();
+    };
+  });
+}
+
+function cupSvg(pct, color){
+  const h = 46, fillH = (pct/100)*h;
+  return `<svg width="40" height="52" viewBox="0 0 40 52">
+    <path d="M4 6 L36 6 L32 46 Q20 52 8 46 Z" fill="none" stroke="var(--line)" stroke-width="2"/>
+    <clipPath id="clip${Math.round(pct)}"><path d="M4 6 L36 6 L32 46 Q20 52 8 46 Z"/></clipPath>
+    <rect x="4" y="${6+h-fillH}" width="32" height="${fillH}" fill="${color}" opacity="0.85" clip-path="url(#clip${Math.round(pct)})"/>
+    <path d="M36 14 Q44 14 44 22 Q44 30 36 30" fill="none" stroke="var(--line)" stroke-width="2"/>
+  </svg>`;
+}
+
+document.querySelectorAll('.who-btn').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('.who-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedWho = btn.dataset.who;
+  };
+});
+
+function renderHistory(){
+  const listEl = document.getElementById('historyList');
+  const byDate = {};
+  allEntries.forEach(e => {
+    const p = PROFILES.find(x => x.key === e.person);
+    if (p && e.date === p.dayId) return;
+    if (!byDate[e.date]) byDate[e.date] = {};
+    byDate[e.date][e.person] = (byDate[e.date][e.person] || 0) + Number(e.calories || 0);
+  });
+  const dates = Object.keys(byDate).sort().reverse().slice(0, 14);
+  if (!dates.length){ listEl.innerHTML = '<p class="empty-note">Past days will show up here once logged.</p>'; return; }
+  listEl.innerHTML = dates.map(d => {
+    const totals = byDate[d];
+    const parts = PROFILES.map(p => {
+      const cal = Math.round(totals[p.key] || 0);
+      const over = cal > p.target;
+      return `<span>${p.key} <b style="color:${over ? 'var(--berry)' : 'var(--ink)'}">${cal}</b></span>`;
+    }).join('');
+    const label = new Date(d + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return `<div class="history-row">
+      <div class="history-date">${label}</div>
+      <div class="history-totals">${parts}</div>
+    </div>`;
+  }).join('');
+}
+
+function getTodayEntries(){
+  return allEntries.filter(e => {
+    const p = PROFILES.find(x => x.key === e.person);
+    return p && e.date === p.dayId;
+  });
+}
+
+function renderLog(){
+  const list = document.getElementById('logList');
+  const entries = getTodayEntries();
+  if (!entries.length){ list.innerHTML = '<p class="empty-note">Nothing logged yet today.</p>'; return; }
+  list.innerHTML = entries.slice().reverse().map(e=>`
+    <div class="logrow">
+      <div class="who">${e.person}</div>
+      <div class="food">${e.food} · ${e.grams}g</div>
+      <div class="cal">${Math.round(e.calories)} cal</div>
+    </div>`).join('');
+}
+
+async function loadConfig(){
+  for (const p of PROFILES) {
+    try {
+      const cd = await window.storage.get('caldef-day-' + p.storeKey, true);
+      if (cd && cd.value) { p.dayId = cd.value; }
+    } catch(e){}
+  }
+  try {
+    const t = await window.storage.get('kape-kalori-targets', true);
+    if (t && t.value) {
+      const saved = JSON.parse(t.value);
+      PROFILES.forEach(p => { if (saved[p.key]) p.target = saved[p.key]; });
+    }
+  } catch(e){}
+}
+
+async function saveTargets(){
+  const obj = {}; PROFILES.forEach(p => obj[p.key] = p.target);
+  try { await window.storage.set('kape-kalori-targets', JSON.stringify(obj), true); } catch(e){}
+}
+
+async function loadTodayFromSheet(){
+  if (!config.webhook) return;
+  try {
+    const res = await fetch(config.webhook);
+    const data = await res.json();
+    allEntries = data;
+    renderProfiles(); renderLog(); renderHistory();
+  } catch(e){
+    console.error('Sheet read failed', e);
+  }
+}
+
+async function pushToSheet(entry){
+  if (!config.webhook) return { ok: false, reason: 'no-webhook' };
+  try {
+    await fetch(config.webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(entry)
+    });
+    return { ok: true };
+  } catch(e){
+    return { ok: false, reason: e.message };
+  }
+}
+
+let pendingResult = null;
+
+document.getElementById('analyzeBtn').onclick = async () => {
+  const food = document.getElementById('foodInput').value.trim();
+  const grams = document.getElementById('gramsInput').value.trim();
+  const who = selectedWho;
+  const statusEl = document.getElementById('analyzeStatus');
+  if (!food || !grams){ statusEl.textContent = 'Enter a food and a gram amount.'; statusEl.className='status-msg err'; return; }
+  statusEl.textContent = 'Analyzing...'; statusEl.className = 'status-msg';
+  document.getElementById('analyzeBtn').disabled = true;
+
+  try {
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 300,
+        system: "You are a nutrition database. Given a food and a quantity in grams, respond with ONLY a JSON object, no markdown fences, no preamble, in this exact shape: {\"calories\": number, \"protein\": number, \"carbs\": number, \"fat\": number}. Numbers are grams for protein/carbs/fat and kcal for calories, for the exact quantity given. Use standard nutrition database values, best estimate if the food is ambiguous.",
+        messages: [{ role: "user", content: `${food}, ${grams}g` }]
+      })
+    });
+    const data = await response.json();
+    const textBlock = data.content.find(b => b.type === 'text');
+    const clean = textBlock.text.replace(/```json|```/g,'').trim();
+    const macros = JSON.parse(clean);
+
+    const profile = PROFILES.find(p => p.key === who);
+    pendingResult = { person: who, food, grams: Number(grams), date: profile.dayId, ...macros };
+
+    document.getElementById('resultFood').textContent = `${food} — ${grams}g (${who})`;
+    document.getElementById('resultMacros').innerHTML = `
+      <div>Cal<b>${Math.round(macros.calories)}</b></div>
+      <div>Protein<b>${Math.round(macros.protein)}g</b></div>
+      <div>Carbs<b>${Math.round(macros.carbs)}g</b></div>
+      <div>Fat<b>${Math.round(macros.fat)}g</b></div>`;
+    document.getElementById('resultPanel').classList.add('show');
+    statusEl.textContent = '';
+  } catch(e){
+    statusEl.textContent = 'Could not analyze that food. Try again.';
+    statusEl.className = 'status-msg err';
+  }
+  document.getElementById('analyzeBtn').disabled = false;
+};
+
+document.getElementById('addBtn').onclick = async () => {
+  if (!pendingResult) return;
+  allEntries.push(pendingResult);
+  renderProfiles(); renderLog();
+  const statusEl = document.getElementById('analyzeStatus');
+  const result = await pushToSheet(pendingResult);
+  if (result.ok) { statusEl.textContent = 'Logged and saved.'; statusEl.className = 'status-msg ok'; }
+  else { statusEl.textContent = 'Logged locally, but could not save to Sheets. Check the connection and try again.'; statusEl.className = 'status-msg err'; }
+  document.getElementById('resultPanel').classList.remove('show');
+  document.getElementById('foodInput').value = '';
+  document.getElementById('gramsInput').value = '';
+  pendingResult = null;
+};
+
+document.getElementById('discardBtn').onclick = () => {
+  document.getElementById('resultPanel').classList.remove('show');
+  pendingResult = null;
+};
+
+(async function init(){
+  await loadConfig();
+  renderProfiles();
+  renderLog();
+  renderHistory();
+  if (config.webhook) await loadTodayFromSheet();
+})();
+</script>
+</body>
+</html>
