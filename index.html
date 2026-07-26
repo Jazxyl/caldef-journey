@@ -234,7 +234,11 @@ function renderProfiles(){
     btn.onclick = () => {
       const p = PROFILES.find(x=>x.key===btn.dataset.key);
       const val = prompt('Set daily target calories for '+p.key, p.target);
-      if (val && !isNaN(val)) { p.target = Number(val); renderProfiles(); renderHistory(); saveTargets(); }
+      if (val && !isNaN(val)) {
+        p.target = Number(val);
+        renderProfiles(); renderHistory();
+        pushSettings(p.key, p.target, p.dayId);
+      }
     };
   });
 
@@ -243,8 +247,8 @@ function renderProfiles(){
       const p = PROFILES.find(x=>x.key===btn.dataset.key);
       if (!confirm(`Wrap up ${p.key}'s day? It will move into History and a new day will start for ${p.key}.`)) return;
       p.dayId = realDateStr();
-      try { await window.storage.set('caldef-day-' + p.storeKey, p.dayId, true); } catch(e){}
       renderProfiles(); renderLog(); renderHistory();
+      await pushSettings(p.key, p.target, p.dayId);
       if (config.webhook) await loadTodayFromSheet();
     };
   });
@@ -313,25 +317,17 @@ function renderLog(){
     </div>`).join('');
 }
 
-async function loadConfig(){
-  for (const p of PROFILES) {
-    try {
-      const cd = await window.storage.get('caldef-day-' + p.storeKey, true);
-      if (cd && cd.value) { p.dayId = cd.value; }
-    } catch(e){}
-  }
+async function pushSettings(person, target, dayId){
+  if (!config.webhook) return;
   try {
-    const t = await window.storage.get('kape-kalori-targets', true);
-    if (t && t.value) {
-      const saved = JSON.parse(t.value);
-      PROFILES.forEach(p => { if (saved[p.key]) p.target = saved[p.key]; });
-    }
-  } catch(e){}
-}
-
-async function saveTargets(){
-  const obj = {}; PROFILES.forEach(p => obj[p.key] = p.target);
-  try { await window.storage.set('kape-kalori-targets', JSON.stringify(obj), true); } catch(e){}
+    await fetch(config.webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ type: 'settings', person, target, dayId })
+    });
+  } catch(e){
+    console.error('Settings save failed', e);
+  }
 }
 
 async function loadTodayFromSheet(){
@@ -339,7 +335,14 @@ async function loadTodayFromSheet(){
   try {
     const res = await fetch(config.webhook);
     const data = await res.json();
-    allEntries = data;
+    allEntries = data.entries || [];
+    (data.settings || []).forEach(s => {
+      const p = PROFILES.find(x => x.key === s.person);
+      if (p) {
+        if (s.target) p.target = Number(s.target);
+        if (s.dayId) p.dayId = s.dayId;
+      }
+    });
     renderProfiles(); renderLog(); renderHistory();
   } catch(e){
     console.error('Sheet read failed', e);
@@ -418,7 +421,6 @@ document.getElementById('discardBtn').onclick = () => {
 };
 
 (async function init(){
-  await loadConfig();
   renderProfiles();
   renderLog();
   renderHistory();
