@@ -132,6 +132,7 @@
       <h1>CalDef Journey</h1>
     </div>
     <div class="datebadge" id="dateBadge"></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);opacity:0.5;">build v7</div>
   </div>
 
   <div class="profiles" id="profiles"></div>
@@ -377,7 +378,11 @@ async function pushSettings(person, target, dayId){
 
 function cleanDate(v){
   if (!v) return v;
-  return String(v).slice(0, 10);
+  const s = String(v);
+  if (s.length <= 10) return s;
+  const d = new Date(s);
+  if (isNaN(d)) return s.slice(0, 10);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 async function loadTodayFromSheet(){
