@@ -375,17 +375,22 @@ async function pushSettings(person, target, dayId){
   }
 }
 
+function cleanDate(v){
+  if (!v) return v;
+  return String(v).slice(0, 10);
+}
+
 async function loadTodayFromSheet(){
   if (!config.webhook) return;
   try {
     const res = await fetch(config.webhook + '?t=' + Date.now(), { cache: 'no-store' });
     const data = await res.json();
-    allEntries = data.entries || [];
+    allEntries = (data.entries || []).map(e => ({ ...e, date: cleanDate(e.date) }));
     (data.settings || []).forEach(s => {
       const p = PROFILES.find(x => x.key === s.person);
       if (p) {
         if (s.target) p.target = Number(s.target);
-        if (s.dayId) p.dayId = s.dayId;
+        if (s.dayId) p.dayId = cleanDate(s.dayId);
       }
     });
     renderProfiles(); renderLog(); renderHistory();
