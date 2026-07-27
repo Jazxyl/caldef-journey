@@ -319,27 +319,29 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
 
 function renderHistory(){
   const listEl = document.getElementById('historyList');
-  const byDate = {};
+  const byKey = {};
   allEntries.forEach(e => {
     const p = PROFILES.find(x => x.key === e.person);
     if (p && e.date === p.dayId) return;
-    if (!byDate[e.date]) byDate[e.date] = {};
-    byDate[e.date][e.person] = (byDate[e.date][e.person] || 0) + Number(e.calories || 0);
+    const key = e.date + '|' + e.person;
+    byKey[key] = (byKey[key] || 0) + Number(e.calories || 0);
   });
-  const dates = Object.keys(byDate).sort().reverse().slice(0, 14);
-  if (!dates.length){ listEl.innerHTML = '<p class="empty-note">Past days will show up here once logged.</p>'; return; }
-  listEl.innerHTML = dates.map(d => {
-    const totals = byDate[d];
-    const parts = PROFILES.map(p => {
-      const cal = Math.round(totals[p.key] || 0);
-      const over = cal > p.target;
-      return `<span>${p.key} <b style="color:${over ? 'var(--berry)' : 'var(--ink)'}">${cal}</b></span>`;
-    }).join('');
-    const parsed = new Date(d + 'T00:00:00');
-    const label = isNaN(parsed) ? d : parsed.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const rows = Object.keys(byKey).map(key => {
+    const [date, person] = key.split('|');
+    return { date, person, cal: byKey[key] };
+  }).sort((a, b) => b.date.localeCompare(a.date) || a.person.localeCompare(b.person)).slice(0, 30);
+
+  if (!rows.length){ listEl.innerHTML = '<p class="empty-note">Past days will show up here once wrapped up.</p>'; return; }
+
+  listEl.innerHTML = rows.map(r => {
+    const p = PROFILES.find(x => x.key === r.person);
+    const cal = Math.round(r.cal);
+    const over = p && cal > p.target;
+    const parsed = new Date(r.date + 'T00:00:00');
+    const label = isNaN(parsed) ? r.date : parsed.toLocaleDateString('en-US',{month:'short',day:'numeric'});
     return `<div class="history-row">
       <div class="history-date">${label}</div>
-      <div class="history-totals">${parts}</div>
+      <div class="history-totals"><span>${r.person} <b style="color:${over ? 'var(--berry)' : 'var(--ink)'}">${cal} cal</b></span></div>
     </div>`;
   }).join('');
 }
