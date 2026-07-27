@@ -63,6 +63,11 @@
   .section-title{font-family:'Fraunces',serif;font-weight:600;font-size:18px;margin:0 0 12px;}
 
   .log-card{margin-bottom:18px;}
+  .log-card-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .log-card-head .section-title{margin:0;}
+  .mode-toggle{display:flex;gap:6px;}
+  .mode-btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer;}
+  .mode-btn.active{background:var(--ink);color:#fff;border-color:var(--ink);}
   .log-form{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .field{display:flex;flex-direction:column;gap:5px;}
   .field label{font-size:11px;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.04em;}
@@ -132,8 +137,15 @@
   <div class="profiles" id="profiles"></div>
 
   <div class="card log-card">
-    <p class="section-title">Log a food</p>
-    <div class="log-form">
+    <div class="log-card-head">
+      <p class="section-title">Log a food</p>
+      <div class="mode-toggle" id="modeToggle">
+        <button type="button" class="mode-btn active" data-mode="ai">Auto</button>
+        <button type="button" class="mode-btn" data-mode="manual">Manual</button>
+      </div>
+    </div>
+
+    <div class="log-form" id="aiForm">
       <div class="field">
         <label>Who</label>
         <div class="who-toggle" id="whoToggle">
@@ -150,6 +162,25 @@
         <input type="number" id="gramsInput" placeholder="100" style="width:90px;">
       </div>
       <button class="btn-moss" id="analyzeBtn">Get macros</button>
+    </div>
+
+    <div class="log-form" id="manualForm" style="display:none;">
+      <div class="field">
+        <label>Who</label>
+        <div class="who-toggle" id="whoToggleManual">
+          <button type="button" class="who-btn active" data-who="Labs 👦">Labs 👦</button>
+          <button type="button" class="who-btn" data-who="Labs 👧">Labs 👧</button>
+        </div>
+      </div>
+      <div class="field grow">
+        <label>Food</label>
+        <input type="text" id="manualFoodInput" placeholder="e.g. protein bar">
+      </div>
+      <div class="field">
+        <label>Calories</label>
+        <input type="number" id="manualCalInput" placeholder="200" style="width:90px;">
+      </div>
+      <button class="btn-moss" id="manualAddBtn">Add to log</button>
     </div>
 
     <div class="result-panel" id="resultPanel">
@@ -266,9 +297,22 @@ function cupSvg(pct, color){
 
 document.querySelectorAll('.who-btn').forEach(btn=>{
   btn.onclick = () => {
-    document.querySelectorAll('.who-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
     selectedWho = btn.dataset.who;
+    document.querySelectorAll('.who-btn').forEach(b=>{
+      b.classList.toggle('active', b.dataset.who === selectedWho);
+    });
+  };
+});
+
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.onclick = () => {
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const mode = btn.dataset.mode;
+    document.getElementById('aiForm').style.display = mode === 'ai' ? 'flex' : 'none';
+    document.getElementById('manualForm').style.display = mode === 'manual' ? 'flex' : 'none';
+    document.getElementById('resultPanel').classList.remove('show');
+    document.getElementById('analyzeStatus').textContent = '';
   };
 });
 
@@ -312,7 +356,7 @@ function renderLog(){
   list.innerHTML = entries.slice().reverse().map(e=>`
     <div class="logrow">
       <div class="who">${e.person}</div>
-      <div class="food">${e.food} · ${e.grams}g</div>
+      <div class="food">${e.food}${e.grams ? ' · ' + e.grams + 'g' : ''}</div>
       <div class="cal">${Math.round(e.calories)} cal</div>
     </div>`).join('');
 }
@@ -418,6 +462,29 @@ document.getElementById('addBtn').onclick = async () => {
 document.getElementById('discardBtn').onclick = () => {
   document.getElementById('resultPanel').classList.remove('show');
   pendingResult = null;
+};
+
+document.getElementById('manualAddBtn').onclick = async () => {
+  const food = document.getElementById('manualFoodInput').value.trim();
+  const calories = document.getElementById('manualCalInput').value.trim();
+  const statusEl = document.getElementById('analyzeStatus');
+
+  if (!food || !calories){ statusEl.textContent = 'Enter a food and calories.'; statusEl.className = 'status-msg err'; return; }
+
+  const profile = PROFILES.find(p => p.key === selectedWho);
+  const entry = {
+    person: selectedWho, food, grams: 0, date: profile.dayId,
+    calories: Number(calories), protein: 0, carbs: 0, fat: 0
+  };
+
+  allEntries.push(entry);
+  renderProfiles(); renderLog();
+  const result = await pushToSheet(entry);
+  if (result.ok) { statusEl.textContent = 'Logged and saved.'; statusEl.className = 'status-msg ok'; }
+  else { statusEl.textContent = 'Logged locally, but could not save to Sheets. Check the connection and try again.'; statusEl.className = 'status-msg err'; }
+
+  document.getElementById('manualFoodInput').value = '';
+  document.getElementById('manualCalInput').value = '';
 };
 
 (async function init(){
