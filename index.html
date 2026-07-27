@@ -433,6 +433,7 @@ document.getElementById('analyzeBtn').onclick = async () => {
     const macros = await response.json();
     if (!response.ok) throw new Error(macros.error || 'Analysis failed');
 
+    if (config.webhook) await loadTodayFromSheet();
     const profile = PROFILES.find(p => p.key === who);
     pendingResult = { person: who, food, grams: Number(grams), date: profile.dayId, ...macros };
 
@@ -477,6 +478,7 @@ document.getElementById('manualAddBtn').onclick = async () => {
 
   if (!food || !calories){ statusEl.textContent = 'Enter a food and calories.'; statusEl.className = 'status-msg err'; return; }
 
+  if (config.webhook) await loadTodayFromSheet();
   const profile = PROFILES.find(p => p.key === selectedWho);
   const entry = {
     person: selectedWho, food, grams: 0, date: profile.dayId,
